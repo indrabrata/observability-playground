@@ -1,0 +1,141 @@
+definitions:
+  model.ProductRequest:
+    properties:
+      name:
+        example: Product A
+        type: string
+      price:
+        example: 10.99
+        type: number
+      quantity:
+        example: 10
+        type: integer
+    type: object
+  model.ProductResponse:
+    properties:
+      id:
+        example: 1
+        type: integer
+      name:
+        example: Product A
+        type: string
+      price:
+        example: 10.99
+        type: number
+      quantity:
+        example: 10
+        type: integer
+    type: object
+info:
+  contact:
+    email: contact@ndrz.dev
+    name: API Support
+    url: http://www.swagger.io/support
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+paths:
+  /products:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all products
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.ProductResponse'
+            type: array
+      summary: Get products
+      tags:
+      - Products
+    post:
+      consumes:
+      - application/json
+      description: Creates a new product
+      parameters:
+      - description: Product details
+        in: body
+        name: CreateProduct
+        required: true
+        schema:
+          $ref: '#/definitions/model.ProductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.ProductResponse'
+      summary: Create product
+      tags:
+      - Products
+  /products/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a product
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      summary: Delete product
+      tags:
+      - Products
+    get:
+      consumes:
+      - application/json
+      description: Retrieves product based on given ID
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.ProductResponse'
+      summary: Get product by ID
+      tags:
+      - Products
+    put:
+      consumes:
+      - application/json
+      description: Updates a product
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Product details
+        in: body
+        name: UpdateProduct
+        required: true
+        schema:
+          $ref: '#/definitions/model.ProductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.ProductResponse'
+      summary: Update product
+      tags:
+      - Products
+swagger: "2.0"
