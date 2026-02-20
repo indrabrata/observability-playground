@@ -1,1 +1,38 @@
 name: observability-playground
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.46.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+
+  grafana:
+    image: grafana/grafana:9.4.3
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana.ini:/etc/grafana/grafana.ini
+    command:
+      - "--config=/etc/grafana/grafana.ini"
+
+  alloy:
+    image: alloydb/alloydb:v1.1.0
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./alloydb.yaml:/etc/alloydb/alloydb.yaml
+    command:
+      - "--config=/etc/alloydb/alloydb.yaml"
+
+  tempo:
+    image: grafana/tempo:v2.1.0
+    ports:
+      - "3200:3200"
+    volumes:
+      - ./tempo.yaml:/etc/tempo/tempo.yaml
+    command:
+      - "--config=/etc/tempo/tempo.yaml"

@@ -8,9 +8,12 @@ import (
 	"github.com/indrabrata/observability-playground/docs"
 	"github.com/indrabrata/observability-playground/handler"
 	"github.com/indrabrata/observability-playground/infrastructure"
+	"github.com/indrabrata/observability-playground/middleware"
 	"github.com/indrabrata/observability-playground/repository"
 	"github.com/indrabrata/observability-playground/service"
 	"github.com/joho/godotenv"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
@@ -34,7 +37,11 @@ func main() {
 	docs.SwaggerInfo.BasePath = ""
 	docs.SwaggerInfo.Schemes = []string{"http", "https"}
 
+	reg := prometheus.NewRegistry()
+	metrics := middleware.NewMetrics(reg)
+
 	router := chi.NewRouter()
+	router.Use(metrics.MetricsMiddleware)
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello, World!"))
 	})
@@ -51,6 +58,7 @@ func main() {
 	router.Get("/products/{id}", productHandler.GetProduct)
 	router.Put("/products/{id}", productHandler.UpdateProduct)
 	router.Delete("/products/{id}", productHandler.DeleteProduct)
+	router.Get("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}).ServeHTTP)
 
 	log.Info().Msg("Starting server on port " + port)
 
