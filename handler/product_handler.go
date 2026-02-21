@@ -74,6 +74,9 @@ func (h *ProductHandler) GetProducts(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
 	defer cancel()
 
+	ctx, span := h.trace.Start(ctx, "Handler.GetProducts", trace.WithAttributes(attribute.String("requestId", r.Context().Value("requestId").(string))))
+	defer span.End()
+
 	products, err := h.service.GetProducts(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -96,6 +99,9 @@ func (h *ProductHandler) GetProducts(w http.ResponseWriter, r *http.Request) {
 func (h *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
 	defer cancel()
+
+	ctx, span := h.trace.Start(ctx, "Handler.GetProduct", trace.WithAttributes(attribute.String("requestId", r.Context().Value("requestId").(string))))
+	defer span.End()
 
 	idStr := chi.URLParam(r, "id")
 	if idStr == "" {
@@ -132,6 +138,9 @@ func (h *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
 func (h *ProductHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
 	defer cancel()
+
+	ctx, span := h.trace.Start(ctx, "Handler.UpdateProduct", trace.WithAttributes(attribute.String("requestId", r.Context().Value("requestId").(string))))
+	defer span.End()
 
 	idStr := chi.URLParam(r, "id")
 	if idStr == "" {
@@ -178,6 +187,9 @@ func (h *ProductHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 func (h *ProductHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
 	defer cancel()
+
+	ctx, span := h.trace.Start(ctx, "Handler.DeleteProduct", trace.WithAttributes(attribute.String("requestId", r.Context().Value("requestId").(string))))
+	defer span.End()
 
 	idStr := chi.URLParam(r, "id")
 	if idStr == "" {

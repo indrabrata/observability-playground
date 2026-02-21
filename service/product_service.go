@@ -49,6 +49,9 @@ func (s *ProductService) CreateProduct(ctx context.Context, request model.Produc
 }
 
 func (s *ProductService) GetProducts(ctx context.Context) ([]model.ProductResponse, error) {
+	ctx, span := s.trace.Start(ctx, "Service.GetProducts")
+	defer span.End()
+
 	data, err := s.repository.GetProducts(ctx)
 	if err != nil {
 		return nil, err
@@ -70,6 +73,9 @@ func (s *ProductService) GetProducts(ctx context.Context) ([]model.ProductRespon
 }
 
 func (s *ProductService) GetProduct(ctx context.Context, id int64) (model.ProductResponse, error) {
+	ctx, span := s.trace.Start(ctx, "Service.GetProduct")
+	defer span.End()
+
 	data, err := s.repository.GetProduct(ctx, id)
 	if err != nil {
 		return model.ProductResponse{}, err
@@ -86,6 +92,9 @@ func (s *ProductService) GetProduct(ctx context.Context, id int64) (model.Produc
 }
 
 func (s *ProductService) UpdateProduct(ctx context.Context, id int64, request model.ProductRequest) (model.ProductResponse, error) {
+	ctx, span := s.trace.Start(ctx, "Service.UpdateProduct")
+	defer span.End()
+
 	product := repository.UpdateProductParams{
 		ID:        id,
 		Name:      request.Name,
@@ -110,6 +119,9 @@ func (s *ProductService) UpdateProduct(ctx context.Context, id int64, request mo
 }
 
 func (s *ProductService) DeleteProduct(ctx context.Context, id int64) error {
+	ctx, span := s.trace.Start(ctx, "Service.DeleteProduct")
+	defer span.End()
+
 	err := s.repository.DeleteProduct(ctx, id)
 	if err != nil {
 		return err

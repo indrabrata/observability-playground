@@ -48,8 +48,8 @@ func main() {
 	})
 
 	productRepository := repository.New(db)
-	productSService := service.New(productRepository, trace.Tracer("product_service"))
-	productHandler := handler.New(productSService, trace.Tracer("product_handler"))
+	productSService := service.New(productRepository, trace.Tracer("Product.Service"))
+	productHandler := handler.New(productSService, trace.Tracer("Product.Handler"))
 
 	router.Post("/products", productHandler.CreateProduct)
 	router.Get("/products", productHandler.GetProducts)
