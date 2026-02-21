@@ -7,19 +7,25 @@ import (
 
 	"github.com/indrabrata/observability-playground/model"
 	"github.com/indrabrata/observability-playground/repository"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type ProductService struct {
 	repository *repository.Queries
+	trace      trace.Tracer
 }
 
-func New(repository *repository.Queries) *ProductService {
+func New(repository *repository.Queries, trace trace.Tracer) *ProductService {
 	return &ProductService{
 		repository: repository,
+		trace:      trace,
 	}
 }
 
 func (s *ProductService) CreateProduct(ctx context.Context, request model.ProductRequest) (model.ProductResponse, error) {
+	ctx, span := s.trace.Start(ctx, "Service.CreateProduct")
+	defer span.End()
+
 	product := repository.CreateProductParams{
 		Name:      request.Name,
 		Quantity:  request.Quantity,

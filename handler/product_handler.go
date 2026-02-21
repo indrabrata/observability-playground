@@ -10,15 +10,19 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/indrabrata/observability-playground/model"
 	"github.com/indrabrata/observability-playground/service"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type ProductHandler struct {
 	service *service.ProductService
+	trace   trace.Tracer
 }
 
-func New(service *service.ProductService) *ProductHandler {
+func New(service *service.ProductService, trace trace.Tracer) *ProductHandler {
 	return &ProductHandler{
 		service: service,
+		trace:   trace,
 	}
 }
 
@@ -33,6 +37,9 @@ func New(service *service.ProductService) *ProductHandler {
 func (h *ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
 	defer cancel()
+
+	ctx, span := h.trace.Start(ctx, "Handler.CreateProduct", trace.WithAttributes(attribute.String("requestId", r.Context().Value("requestId").(string))))
+	defer span.End()
 
 	var req model.ProductRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
