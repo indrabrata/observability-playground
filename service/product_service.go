@@ -8,6 +8,7 @@ import (
 	"github.com/indrabrata/observability-playground/model"
 	"github.com/indrabrata/observability-playground/repository"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 type ProductService struct {
@@ -33,8 +34,15 @@ func (s *ProductService) CreateProduct(ctx context.Context, request model.Produc
 		CreatedAt: time.Now(),
 	}
 
+	zap.L().Debug("create product payload", zap.String("requestId", ctx.Value("requestId").(string)),
+		zap.Dict("product",
+			zap.String("name", product.Name),
+			zap.Int64("quantity", product.Quantity),
+			zap.Float64("price", product.Price)))
+
 	data, err := s.repository.CreateProduct(ctx, product)
 	if err != nil {
+		zap.L().Error("failed to create product", zap.Error(err), zap.String("requestId", ctx.Value("requestId").(string)))
 		return model.ProductResponse{}, err
 	}
 
@@ -54,6 +62,7 @@ func (s *ProductService) GetProducts(ctx context.Context) ([]model.ProductRespon
 
 	data, err := s.repository.GetProducts(ctx)
 	if err != nil {
+		zap.L().Error("failed to get products", zap.Error(err), zap.String("requestId", ctx.Value("requestId").(string)))
 		return nil, err
 	}
 
@@ -78,6 +87,7 @@ func (s *ProductService) GetProduct(ctx context.Context, id int64) (model.Produc
 
 	data, err := s.repository.GetProduct(ctx, id)
 	if err != nil {
+		zap.L().Error("failed to get product", zap.Error(err), zap.String("requestId", ctx.Value("requestId").(string)))
 		return model.ProductResponse{}, err
 	}
 
@@ -103,8 +113,15 @@ func (s *ProductService) UpdateProduct(ctx context.Context, id int64, request mo
 		UpdatedAt: sql.NullTime{Time: time.Now(), Valid: true},
 	}
 
+	zap.L().Debug("update product payload", zap.String("requestId", ctx.Value("requestId").(string)),
+		zap.Dict("product",
+			zap.String("name", product.Name),
+			zap.Int64("quantity", product.Quantity),
+			zap.Float64("price", product.Price)))
+
 	err := s.repository.UpdateProduct(ctx, product)
 	if err != nil {
+		zap.L().Error("failed to update product", zap.Error(err), zap.String("requestId", ctx.Value("requestId").(string)))
 		return model.ProductResponse{}, err
 	}
 
@@ -124,6 +141,7 @@ func (s *ProductService) DeleteProduct(ctx context.Context, id int64) error {
 
 	err := s.repository.DeleteProduct(ctx, id)
 	if err != nil {
+		zap.L().Error("failed to delete product", zap.Error(err), zap.String("requestId", ctx.Value("requestId").(string)))
 		return err
 	}
 

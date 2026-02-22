@@ -29,12 +29,12 @@ func NewOpenTelemetryTrace(ctx context.Context) *trace.TracerProvider {
 		),
 	)
 	if err != nil {
-		zap.L().Fatal("failed to create resource")
+		zap.L().Fatal("failed to create resource", zap.Error(err))
 	}
 
 	traceExporter, err := stdouttrace.New(stdouttrace.WithPrettyPrint())
 	if err != nil {
-		zap.L().Fatal("failed to initialize trace exporter")
+		zap.L().Fatal("failed to initialize trace exporter", zap.Error(err))
 	}
 
 	// Note : A Provideris a factory/registry that creates and manages telemetry instruments. It's the central configuration hub.

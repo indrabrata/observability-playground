@@ -12,6 +12,7 @@ import (
 	"github.com/indrabrata/observability-playground/service"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 type ProductHandler struct {
@@ -35,6 +36,8 @@ func New(service *service.ProductService, trace trace.Tracer) *ProductHandler {
 // @Success 200 {object} model.ProductResponse
 // @Router /products [post]
 func (h *ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
+	zap.L().Info("creating product", zap.String("requestId", r.Context().Value("requestId").(string)))
+
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
 	defer cancel()
 
@@ -43,11 +46,13 @@ func (h *ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 
 	var req model.ProductRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		zap.L().Error("failed to decode product request", zap.Error(err), zap.String("requestId", r.Context().Value("requestId").(string)))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if err := req.Validate(); err != nil {
+		zap.L().Error("failed to validate product request", zap.Error(err), zap.String("requestId", r.Context().Value("requestId").(string)))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -57,6 +62,8 @@ func (h *ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	zap.L().Info("product created", zap.String("requestId", r.Context().Value("requestId").(string)), zap.Int64("productId", product.Id))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -71,6 +78,8 @@ func (h *ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} []model.ProductResponse
 // @Router /products [get]
 func (h *ProductHandler) GetProducts(w http.ResponseWriter, r *http.Request) {
+	zap.L().Info("get products", zap.String("requestId", r.Context().Value("requestId").(string)))
+
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
 	defer cancel()
 
@@ -82,6 +91,8 @@ func (h *ProductHandler) GetProducts(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	zap.L().Info("products retrieved", zap.String("requestId", r.Context().Value("requestId").(string)), zap.Int("productCount", len(products)))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -103,23 +114,22 @@ func (h *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
 	ctx, span := h.trace.Start(ctx, "Handler.GetProduct", trace.WithAttributes(attribute.String("requestId", r.Context().Value("requestId").(string))))
 	defer span.End()
 
-	idStr := chi.URLParam(r, "id")
-	if idStr == "" {
-		http.Error(w, "id is required", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
+		zap.L().Error("failed to parse id", zap.String("requestId", ctx.Value("requestId").(string)), zap.Error(err))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	zap.L().Info("getting product", zap.String("requestId", ctx.Value("requestId").(string)), zap.Int64("productId", id))
 
 	product, err := h.service.GetProduct(ctx, id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	zap.L().Info("product retrieved", zap.String("requestId", ctx.Value("requestId").(string)), zap.Int64("productId", id))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -142,17 +152,13 @@ func (h *ProductHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	ctx, span := h.trace.Start(ctx, "Handler.UpdateProduct", trace.WithAttributes(attribute.String("requestId", r.Context().Value("requestId").(string))))
 	defer span.End()
 
-	idStr := chi.URLParam(r, "id")
-	if idStr == "" {
-		http.Error(w, "id is required", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	zap.L().Info("updating product", zap.String("requestId", ctx.Value("requestId").(string)), zap.Int64("productId", id))
 
 	var req model.ProductRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -170,6 +176,8 @@ func (h *ProductHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	zap.L().Info("product updated", zap.String("requestId", ctx.Value("requestId").(string)), zap.Int64("productId", id))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -191,23 +199,21 @@ func (h *ProductHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	ctx, span := h.trace.Start(ctx, "Handler.DeleteProduct", trace.WithAttributes(attribute.String("requestId", r.Context().Value("requestId").(string))))
 	defer span.End()
 
-	idStr := chi.URLParam(r, "id")
-	if idStr == "" {
-		http.Error(w, "id is required", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	zap.L().Info("deleting product", zap.String("requestId", ctx.Value("requestId").(string)), zap.Int64("productId", id))
 
 	err = h.service.DeleteProduct(ctx, id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	zap.L().Info("product deleted", zap.String("requestId", ctx.Value("requestId").(string)), zap.Int64("productId", id))
 
 	w.WriteHeader(http.StatusNoContent)
 }

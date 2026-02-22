@@ -29,7 +29,7 @@ func main() {
 	ctx := context.Background()
 
 	if err := godotenv.Load(); err != nil {
-		zap.L().Fatal("failed to load environment variables")
+		zap.L().Fatal("failed to load environment variables", zap.Error(err))
 	}
 
 	infrastructure.NewZapLog(ctx)
@@ -43,6 +43,7 @@ func main() {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestIdMiddleware)
 	router.Use(middleware.MetricsMiddleware)
+	router.Use(middleware.RequestMiddleware)
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello, World!"))
 	})

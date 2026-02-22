@@ -26,9 +26,9 @@ func NewZapLog(ctx context.Context) {
 	env := os.Getenv("ENVIRONMENT")
 	var zConfig zap.Config
 	switch env {
-	case "production":
+	case "PRODUCTION":
 		zConfig = zap.NewProductionConfig()
-	case "development":
+	case "DEVELOPMENT":
 		zConfig = zap.NewDevelopmentConfig()
 	default:
 		zConfig = zap.NewDevelopmentConfig()
@@ -41,6 +41,8 @@ func NewZapLog(ctx context.Context) {
 		zConfig.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
 	case "ERROR":
 		zConfig.Level = zap.NewAtomicLevelAt(zap.ErrorLevel)
+	case "WARN":
+		zConfig.Level = zap.NewAtomicLevelAt(zap.WarnLevel)
 	default:
 		zConfig.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
 	}
