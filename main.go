@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"embed"
 	"net/http"
 	"os"
 
@@ -12,13 +13,13 @@ import (
 	"github.com/indrabrata/observability-playground/middleware"
 	"github.com/indrabrata/observability-playground/repository"
 	"github.com/indrabrata/observability-playground/service"
-	"github.com/joho/godotenv"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 	"go.uber.org/zap"
 )
 
-// Span is a unit that records particular operation within certain time window.
+//go:embed sql/migrations/*.sql
+var migrations embed.FS
 
 // @contact.name   API Support
 // @contact.url    http://www.swagger.io/support
@@ -27,15 +28,17 @@ import (
 // @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
 func main() {
 	ctx := context.Background()
-
-	if err := godotenv.Load(); err != nil {
-		zap.L().Fatal("failed to load environment variables", zap.Error(err))
-	}
+	// Note : Uncomment for development
+	// if err := godotenv.Load(); err != nil {
+	// 	zap.L().Fatal("failed to load environment variables", zap.Error(err))
+	// }
 
 	infrastructure.NewZapLog(ctx)
 
 	db := infrastructure.SqlLite3DBConnect(ctx)
 	defer db.Close()
+
+	infrastructure.RunMigrations(db, migrations)
 
 	metric := infrastructure.NewPrometheusMetric(ctx)
 	trace := infrastructure.NewOpenTelemetryTrace(ctx)
@@ -44,7 +47,7 @@ func main() {
 	router.Use(middleware.RequestIdMiddleware)
 	router.Use(middleware.MetricsMiddleware)
 	router.Use(middleware.RequestMiddleware)
-	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
+	router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello, World!"))
 	})
 

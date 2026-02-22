@@ -1,0 +1,141 @@
+name: observability-playground
+
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    container_name: app
+    environment:
+      SQLITE3_PATH: /data/sqlite3.db
+      PORT: 8080
+      LOG_LEVEL: INFO
+      ENVIRONMENT: PRODUCTION
+      OTEL_EXPORTER_OTLP_ENDPOINT: alloy:4317
+    volumes:
+      - sqlite_data:/data
+      - logs_data:/app/logs # shared with alloy so it can tail log files
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.5.1
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+      - "--web.enable-lifecycle"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/-/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  node-exporter:
+    image: prom/node-exporter:v1.10.2
+    container_name: node-exporter
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.rootfs=/rootfs"
+      - "--path.sysfs=/host/sys"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9100/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  grafana:
+    image: grafana/grafana:12.4.0-22081664032
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/datasource:/etc/grafana/provisioning/datasources
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000/api/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  alloy:
+    image: grafana/alloy:v1.13.1
+    container_name: alloy
+    ports:
+      - "12345:12345" # Alloy UI / debug
+      - "4317:4317" # OTLP gRPC (for trace forwarding to Tempo)
+    volumes:
+      - ./monitoring/alloy/config.alloy:/etc/alloy/config.alloy
+      - logs_data:/app/logs # reads the same log files the app writes
+    command: ["run", "/etc/alloy/config.alloy"]
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:main-773b760
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki/config.yaml:/etc/loki/config.yaml
+      - loki_data:/loki
+    command: ["--config.file=/etc/loki/config.yaml"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3100/ready",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:2.6.1
+    container_name: tempo
+    ports:
+      - "3200:3200" # Tempo HTTP
+      - "4318:4318" # OTLP HTTP receiver
+    volumes:
+      - ./monitoring/tempo/config.yaml:/etc/tempo/config.yaml
+    command: ["--config.file=/etc/tempo/config.yaml"]
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  sqlite_data:
+  grafana_data:
+  logs_data:
+  loki_data:

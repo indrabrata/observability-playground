@@ -1,0 +1,5 @@
+Makefile
+sqlc.yaml
+*.db
+docker-compose.yml
+.env

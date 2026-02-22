@@ -41,6 +41,7 @@ func (h *ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
 	defer cancel()
 
+	// Note : span is a unit that records particular operation within certain time window.
 	ctx, span := h.trace.Start(ctx, "Handler.CreateProduct", trace.WithAttributes(attribute.String("requestId", r.Context().Value("requestId").(string))))
 	defer span.End()
 
