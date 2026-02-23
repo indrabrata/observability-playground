@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/indrabrata/observability-playground/common"
+	"github.com/indrabrata/observability-playground/utility"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -18,7 +18,7 @@ func MetricsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
-		crw := common.NewInterceptor(w)
+		crw := utility.NewInterceptor(w)
 		next.ServeHTTP(crw, r)
 
 		elapsed := time.Since(start).Milliseconds()

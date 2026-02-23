@@ -7,16 +7,17 @@ import (
 
 	"github.com/indrabrata/observability-playground/model"
 	"github.com/indrabrata/observability-playground/repository"
+	productrepository "github.com/indrabrata/observability-playground/repository/product"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
 type ProductService struct {
-	repository *repository.Queries
+	repository *repository.BaseRepository[*productrepository.Queries]
 	trace      trace.Tracer
 }
 
-func New(repository *repository.Queries, trace trace.Tracer) *ProductService {
+func New(repository *repository.BaseRepository[*productrepository.Queries], trace trace.Tracer) *ProductService {
 	return &ProductService{
 		repository: repository,
 		trace:      trace,
@@ -27,7 +28,7 @@ func (s *ProductService) CreateProduct(ctx context.Context, request model.Produc
 	ctx, span := s.trace.Start(ctx, "Service.CreateProduct")
 	defer span.End()
 
-	product := repository.CreateProductParams{
+	product := productrepository.CreateProductParams{
 		Name:      request.Name,
 		Quantity:  request.Quantity,
 		Price:     request.Price,
@@ -40,7 +41,7 @@ func (s *ProductService) CreateProduct(ctx context.Context, request model.Produc
 			zap.Int64("quantity", product.Quantity),
 			zap.Float64("price", product.Price)))
 
-	data, err := s.repository.CreateProduct(ctx, product)
+	data, err := s.repository.Query.CreateProduct(ctx, product)
 	if err != nil {
 		zap.L().Error("failed to create product", zap.Error(err), zap.String("requestId", ctx.Value("requestId").(string)))
 		return model.ProductResponse{}, err
@@ -60,7 +61,7 @@ func (s *ProductService) GetProducts(ctx context.Context) ([]model.ProductRespon
 	ctx, span := s.trace.Start(ctx, "Service.GetProducts")
 	defer span.End()
 
-	data, err := s.repository.GetProducts(ctx)
+	data, err := s.repository.Query.GetProducts(ctx)
 	if err != nil {
 		zap.L().Error("failed to get products", zap.Error(err), zap.String("requestId", ctx.Value("requestId").(string)))
 		return nil, err
@@ -85,7 +86,7 @@ func (s *ProductService) GetProduct(ctx context.Context, id int64) (model.Produc
 	ctx, span := s.trace.Start(ctx, "Service.GetProduct")
 	defer span.End()
 
-	data, err := s.repository.GetProduct(ctx, id)
+	data, err := s.repository.Query.GetProduct(ctx, id)
 	if err != nil {
 		zap.L().Error("failed to get product", zap.Error(err), zap.String("requestId", ctx.Value("requestId").(string)))
 		return model.ProductResponse{}, err
@@ -105,7 +106,7 @@ func (s *ProductService) UpdateProduct(ctx context.Context, id int64, request mo
 	ctx, span := s.trace.Start(ctx, "Service.UpdateProduct")
 	defer span.End()
 
-	product := repository.UpdateProductParams{
+	product := productrepository.UpdateProductParams{
 		ID:        id,
 		Name:      request.Name,
 		Quantity:  request.Quantity,
@@ -119,7 +120,7 @@ func (s *ProductService) UpdateProduct(ctx context.Context, id int64, request mo
 			zap.Int64("quantity", product.Quantity),
 			zap.Float64("price", product.Price)))
 
-	err := s.repository.UpdateProduct(ctx, product)
+	err := s.repository.Query.UpdateProduct(ctx, product)
 	if err != nil {
 		zap.L().Error("failed to update product", zap.Error(err), zap.String("requestId", ctx.Value("requestId").(string)))
 		return model.ProductResponse{}, err
@@ -139,7 +140,7 @@ func (s *ProductService) DeleteProduct(ctx context.Context, id int64) error {
 	ctx, span := s.trace.Start(ctx, "Service.DeleteProduct")
 	defer span.End()
 
-	err := s.repository.DeleteProduct(ctx, id)
+	err := s.repository.Query.DeleteProduct(ctx, id)
 	if err != nil {
 		zap.L().Error("failed to delete product", zap.Error(err), zap.String("requestId", ctx.Value("requestId").(string)))
 		return err

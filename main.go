@@ -12,7 +12,9 @@ import (
 	"github.com/indrabrata/observability-playground/infrastructure"
 	"github.com/indrabrata/observability-playground/middleware"
 	"github.com/indrabrata/observability-playground/repository"
+	productrepository "github.com/indrabrata/observability-playground/repository/product"
 	"github.com/indrabrata/observability-playground/service"
+	"github.com/joho/godotenv"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 	"go.uber.org/zap"
@@ -29,9 +31,9 @@ var migrations embed.FS
 func main() {
 	ctx := context.Background()
 	// Note : Uncomment for development
-	// if err := godotenv.Load(); err != nil {
-	// 	zap.L().Fatal("failed to load environment variables", zap.Error(err))
-	// }
+	if err := godotenv.Load(); err != nil {
+		zap.L().Fatal("failed to load environment variables", zap.Error(err))
+	}
 
 	infrastructure.NewZapLog(ctx)
 
@@ -51,8 +53,8 @@ func main() {
 		w.Write([]byte("Hello, World!"))
 	})
 
-	productRepository := repository.New(db)
-	productSService := service.New(productRepository, trace.Tracer("Product.Service"))
+	productRepository := productrepository.New(db)
+	productSService := service.New(repository.NewBaseRepository(db, productRepository), trace.Tracer("Product.Service"))
 	productHandler := handler.New(productSService, trace.Tracer("Product.Handler"))
 
 	router.Post("/products", productHandler.CreateProduct)
